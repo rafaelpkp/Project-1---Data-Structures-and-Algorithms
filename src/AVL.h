@@ -3,34 +3,26 @@
 #include <string>
 #include <vector>
 
+// One student account stored in the tree
 struct Node {
-        std::string name;
-        int id;
-        int height;
-        Node* left;
-        Node* right;
+    std::string name;
+    int id;
+    int height;
+    Node* left;
+    Node* right;
 
-        Node(const std::string& name, int id){
-            this->name = name;
-            this->id = id;
-            this->left = nullptr;
-            this->right = nullptr;
-        }
-}
+    Node(const std::string& name, int id){
+        this->name = name;
+        this->id = id;
+        this->height = 1;
+        this->left = nullptr;
+        this->right = nullptr;
+    }
+};
 
+// AVL tree of students sorted by GatorID
 class AVL {
 private:
-    
-    Node* root = nullptr;
-    Node* insertHelper(Node* node, std::string name, std::string id);
-
-    public:
-    void insert(std::string name, std::string id);
-
-    ~AVL(){
-        // WRITE POSTORDER TRAVERSAL TO DELETE ALL NODES
-    };
-
     Node* root;
     int nodeCount;
 
@@ -38,6 +30,7 @@ private:
     int getHeight(Node* node) const;
     void updateHeight(Node* node);
     int balanceFactor(Node* node) const;
+    Node* rebalance(Node* node);
 
     // rotations
     Node* rotateLeft(Node* node);
@@ -46,15 +39,18 @@ private:
     Node* rotateRightLeft(Node* node);
 
     // recursive helpers
-    Node* insertHelper(Node* node, const std::string& name, int id){};
-    Node* removeHelper(Node* node, int id);
+    Node* insertHelper(Node* node, const std::string& name, int id, bool& inserted);
+    Node* removeHelper(Node* node, int id, bool& removed);
     Node* findID(Node* node, int id) const;
-    void searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids) const; // did not do it; necessary?
-    void inorderHelper(Node* node, std::vector<Node*>& out) const; 
-    void preorderHelper(Node* node, std::vector<Node*>& out) const; 
-    void postorderHelper(Node* node, std::vector<Node*>& out) const; 
+    void searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids) const;
+    void inorderHelper(Node* node, std::vector<Node*>& out) const;
+    void preorderHelper(Node* node, std::vector<Node*>& out) const;
+    void postorderHelper(Node* node, std::vector<Node*>& out) const;
     bool isBalancedHelper(Node* node) const;
     void destroy(Node* node);
+
+    static std::vector<std::string> namesOf(const std::vector<Node*>& nodes);
+    static std::vector<int> idsOf(const std::vector<Node*>& nodes);
 
 public:
     AVL();

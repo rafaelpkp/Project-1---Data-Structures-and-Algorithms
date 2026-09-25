@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <sstream>
 
 #include "AVL.h"
 #include "CommandParser.h"
@@ -10,35 +9,26 @@ using namespace std;
 int main() {
     AVL tree;
 
-    // Get info from line
+    // First line is the number of commands that follow
     string line;
-
     if (!getline(cin, line)) {
         return 0;
     }
 
-    getline(cin, line);
-    
-    int numCommands = stoi(line);
-
-    istringstream newCin(line);
-
-    for (int i = 0; i < numCommands; i++) {
-        getline(cin, line);
-        istringstream newCin(line);
-        string command; newCin >> command;
-
-        if(command == "insert"){
-            insertHelper()
-        }
-
-
-
-        // cout << executeCommand(tree, line) << endl;
-        // tree.insert("Jackie", 0000000);
+    int numCommands = 0;
+    try {
+        numCommands = stoi(line);
+    } catch (...) {
+        return 0;
     }
 
-            string command; newCin >> command;
+    // Each command is parsed and run by executeCommand, which returns the text to print
+    for (int i = 0; i < numCommands && getline(cin, line); i++) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        cout << executeCommand(tree, line) << endl;
+    }
 
     return 0;
-} 
+}
