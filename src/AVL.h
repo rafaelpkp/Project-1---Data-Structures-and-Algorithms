@@ -3,27 +3,39 @@
 #include <string>
 #include <vector>
 
-// AVL tree of students keyed by their 8-digit GatorID.
-// Functions return values (bool / vectors) instead of printing so they can be
-// unit tested directly with Catch2. Printing happens in CommandParser.
-class AVL {
-private:
-    struct Node {
+struct Node {
         std::string name;
         int id;
         int height;
         Node* left;
         Node* right;
 
-        Node(const std::string& name, int id)
-            : name(name), id(id), height(1), left(nullptr), right(nullptr) {}
+        Node(const std::string& name, int id){
+            this->name = name;
+            this->id = id;
+            this->left = nullptr;
+            this->right = nullptr;
+        }
+}
+
+class AVL {
+private:
+    
+    Node* root = nullptr;
+    Node* insertHelper(Node* node, std::string name, std::string id);
+
+    public:
+    void insert(std::string name, std::string id);
+
+    ~AVL(){
+        // WRITE POSTORDER TRAVERSAL TO DELETE ALL NODES
     };
 
     Node* root;
     int nodeCount;
 
     // height / balance helpers
-    int height(Node* node) const;
+    int getHeight(Node* node) const;
     void updateHeight(Node* node);
     int balanceFactor(Node* node) const;
 
@@ -34,13 +46,13 @@ private:
     Node* rotateRightLeft(Node* node);
 
     // recursive helpers
-    Node* insertHelper(Node* node, const std::string& name, int id, bool& inserted);
-    Node* removeHelper(Node* node, int id, bool& removed);
+    Node* insertHelper(Node* node, const std::string& name, int id){};
+    Node* removeHelper(Node* node, int id);
     Node* findID(Node* node, int id) const;
-    void searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids) const;
-    void inorderHelper(Node* node, std::vector<Node*>& out) const;
-    void preorderHelper(Node* node, std::vector<Node*>& out) const;
-    void postorderHelper(Node* node, std::vector<Node*>& out) const;
+    void searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids) const; // did not do it; necessary?
+    void inorderHelper(Node* node, std::vector<Node*>& out) const; 
+    void preorderHelper(Node* node, std::vector<Node*>& out) const; 
+    void postorderHelper(Node* node, std::vector<Node*>& out) const; 
     bool isBalancedHelper(Node* node) const;
     void destroy(Node* node);
 

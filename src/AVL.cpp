@@ -3,312 +3,230 @@
 #include <algorithm>
 #include <cstdlib>
 
-AVL::AVL() : root(nullptr), nodeCount(0) {}
+// Basic functions
+int getHeight(Node* node){
+    int height;
 
-AVL::~AVL() {
-    destroy(root);
-}
+    int left_height = (node->left != nullptr ? node->left->height : 0);
+    int right_height = (node->right != nullptr ? node->right->height : 0);
 
-void AVL::destroy(Node* node) {
-    if (!node) {
-        return;
-    }
-    destroy(node->left);
-    destroy(node->right);
-    delete node;
-}
+    height = 1 + std::max(left_height, right_height);
 
-// ---------- height / balance ----------
+    return height;
+};
 
-int AVL::height(Node* node) const {
-    return node ? node->height : 0;
-}
+// Rotations
+Node* rotateLeft(Node* node){
+    Node* root = node->right;
+    Node* temp = root->left;
 
-void AVL::updateHeight(Node* node) {
-    node->height = 1 + std::max(height(node->left), height(node->right));
-}
+    root->left = node;
+    node->right = temp;
 
-int AVL::balanceFactor(Node* node) const {
-    return node ? height(node->left) - height(node->right) : 0;
-}
+    return root;
+};
 
-// ---------- rotations ----------
+Node* rotateRight(Node* node){
+    Node* root = node->left;
+    Node* temp = root->right;
 
-AVL::Node* AVL::rotateLeft(Node* node) {
-    Node* newRoot = node->right;
-    node->right = newRoot->left;
-    newRoot->left = node;
-    updateHeight(node);
-    updateHeight(newRoot);
-    return newRoot;
-}
+    root->right = node;
+    node->left = temp;
 
-AVL::Node* AVL::rotateRight(Node* node) {
-    Node* newRoot = node->left;
-    node->left = newRoot->right;
-    newRoot->right = node;
-    updateHeight(node);
-    updateHeight(newRoot);
-    return newRoot;
-}
+    return root;
+};
 
-AVL::Node* AVL::rotateLeftRight(Node* node) {
-    node->left = rotateLeft(node->left);
-    return rotateRight(node);
-}
+Node* rotateLeftRight(Node* node){
+    Node* root = node->left->right;
+    Node* temp = root->left;
 
-AVL::Node* AVL::rotateRightLeft(Node* node) {
-    node->right = rotateRight(node->right);
-    return rotateLeft(node);
-}
+    root->left = node->left;
+    root->right = node;
+};
 
-// ---------- insert ----------
+Node* rotateRightLeft(Node* node){
+    Node* root = node->right->left;
+    Node* temp = root->right;
 
-AVL::Node* AVL::insertHelper(Node* node, const std::string& name, int id, bool& inserted) {
-    if (!node) {
-        inserted = true;
+    root->left = node;
+    root->right = node->right;
+};
+
+
+
+// Helper functions
+Node* insertHelper(Node* node, const std::string& name, int id){
+    // Add node
+    if(node ==  nullptr){
         return new Node(name, id);
     }
 
-    if (id < node->id) {
-        node->left = insertHelper(node->left, name, id, inserted);
-    }
-    else if (id > node->id) {
-        node->right = insertHelper(node->right, name, id, inserted);
-    }
-    else {
-        // duplicate ID
-        return node;
+    else if(id < node->id){
+        node->left = insertHelper(node, name, id);
     }
 
-    updateHeight(node);
-    int balance = balanceFactor(node);
+    else{
+        node->left = insertHelper(node, name, id);
+    } 
 
-    if (balance > 1) {
-        if (id < node->left->id) {
-            return rotateRight(node);        // left-left
+    // Update height
+    node->height = getHeight(node);
+
+    // Perform rotations
+    if(node->right->height > node->left->height){ // if tree is right heavy
+        if(node->right->right->height < node->right->left->height){ // if tree's right subtree is left heavy
+            rotateRightLeft(node);
+            node->height = getHeight(node);
         }
-        return rotateLeftRight(node);        // left-right
-    }
-    if (balance < -1) {
-        if (id > node->right->id) {
-            return rotateLeft(node);         // right-right
+
+        else{
+            rotateLeft(node);
+            node->height = getHeight(node);
         }
-        return rotateRightLeft(node);        // right-left
     }
+
+    if(node->right->height < node->left->height){ // if tree is leaft heavy
+        if(node->left->left->height < node->left->right->height){ // if tree's left subtree is right heavy
+            rotateLeftRight(node);
+            node->height = getHeight(node);
+        }
+
+        else{
+            rotateRight(node);
+            node->height = getHeight(node);
+        }
+    }
+};
+
+Node* removeHelper(Node* node, int id){
+
+    if(node == nullptr){
+        return;
+    }
+
+    else if(id < node->id){
+        node->left = removeHelper(node->left, id);
+    }
+
+    else if(id > node->id){
+        node->right = removeHelper(node->right, id);
+    }
+
+    else{ // id == node->id
+        if(node->left == nullptr && node->right == nullptr){ // no childrens
+            delete node;
+            return nullptr;
+        }
+
+        else if (node->left != nullptr && node->right == nullptr){ // has a left children
+            // set the parent to the left child
+            Node* temp = node->left;
+            delete node;
+            return temp;
+        }
+
+        else if (node->right != nullptr && node->left == nullptr){ // has a right children
+            // set the parent to the right child
+            Node* temp = node->right;
+            delete node;
+            return temp;
+        }
+
+        else{ // has both childrens
+            if(node->left->right == nullptr){
+                // set the parent to the left child
+                Node* temp = node->left;
+                delete node;
+                return temp;
+            }
+
+            else{
+                Node* curr = node;
+
+                while(curr->right != nullptr){
+                    curr = curr->right;
+                }
+
+                // set the parent to curr
+                Node* temp = curr;
+                delete curr;
+                return temp;
+            }
+        }
+        
+    }
+
     return node;
-}
+};
 
-bool AVL::insert(const std::string& name, int id) {
-    bool inserted = false;
-    root = insertHelper(root, name, id, inserted);
-    if (inserted) {
-        nodeCount++;
-    }
-    return inserted;
-}
-
-// ---------- remove ----------
-
-// Standard BST deletion. A node with two children is replaced by its
-// inorder successor. No rebalancing is done after deletion.
-AVL::Node* AVL::removeHelper(Node* node, int id, bool& removed) {
-    if (!node) {
+Node* findID(Node* node, int id){
+    if(node == nullptr){
         return nullptr;
     }
 
-    if (id < node->id) {
-        node->left = removeHelper(node->left, id, removed);
-    }
-    else if (id > node->id) {
-        node->right = removeHelper(node->right, id, removed);
-    }
-    else {
-        if (!node->left || !node->right) {
-            Node* child = node->left ? node->left : node->right;
-            delete node;
-            removed = true;
-            return child;
+    else if(id < node->id){
+        return findID(node->left, id);
         }
 
-        Node* successor = node->right;
-        while (successor->left) {
-            successor = successor->left;
-        }
-        node->name = successor->name;
-        node->id = successor->id;
-        node->right = removeHelper(node->right, successor->id, removed);
+    else if(id > node->id){
+        return findID(node->right, id);
     }
 
-    updateHeight(node);
-    return node;
-}
-
-bool AVL::remove(int id) {
-    bool removed = false;
-    root = removeHelper(root, id, removed);
-    if (removed) {
-        nodeCount--;
+    else{
+        return node;
     }
-    return removed;
-}
+};
 
-bool AVL::removeInorder(int n) {
-    if (n < 0 || n >= nodeCount) {
-        return false;
+void searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids){
+    if(node->)
+
+};
+
+// main functions
+void inorderHelper(Node* node){
+     
+    if(node == nullptr){
+        return "";
     }
-    std::vector<Node*> nodes;
-    inorderHelper(root, nodes);
-    return remove(nodes[n]->id);
-}
 
-// ---------- search ----------
+    inorderHelper(node->left);
+    std::cout << node->name << node->id << std::endl;
+    inorderHelper(node->right);
+};
 
-AVL::Node* AVL::findID(Node* node, int id) const {
-    while (node) {
-        if (id == node->id) {
-            return node;
-        }
-        node = id < node->id ? node->left : node->right;
+void preorderHelper(Node* node){
+     
+    if(node == nullptr){
+        return "";
     }
-    return nullptr;
-}
 
-bool AVL::searchID(int id, std::string& nameOut) const {
-    Node* found = findID(root, id);
-    if (!found) {
-        return false;
+    std::cout << node->name << node->id << std::endl;  
+    preorderHelper(node->left);
+    preorderHelper(node->right);  
+};
+
+void postorderHelper(Node* node){
+     
+    if(node == nullptr){
+        return "";
     }
-    nameOut = found->name;
-    return true;
-}
 
-// preorder so IDs come out in the order the spec asks for
-void AVL::searchNameHelper(Node* node, const std::string& name, std::vector<int>& ids) const {
-    if (!node) {
-        return;
-    }
-    if (node->name == name) {
-        ids.push_back(node->id);
-    }
-    searchNameHelper(node->left, name, ids);
-    searchNameHelper(node->right, name, ids);
-}
+    postorderHelper(node->left);
+    postorderHelper(node->right);
+    std::cout << node->name << node->id << std::endl;  
+};
 
-std::vector<int> AVL::searchName(const std::string& name) const {
-    std::vector<int> ids;
-    searchNameHelper(root, name, ids);
-    return ids;
-}
 
-// ---------- traversals ----------
 
-void AVL::inorderHelper(Node* node, std::vector<Node*>& out) const {
-    if (!node) {
-        return;
-    }
-    inorderHelper(node->left, out);
-    out.push_back(node);
-    inorderHelper(node->right, out);
-}
 
-void AVL::preorderHelper(Node* node, std::vector<Node*>& out) const {
-    if (!node) {
-        return;
-    }
-    out.push_back(node);
-    preorderHelper(node->left, out);
-    preorderHelper(node->right, out);
-}
 
-void AVL::postorderHelper(Node* node, std::vector<Node*>& out) const {
-    if (!node) {
-        return;
-    }
-    postorderHelper(node->left, out);
-    postorderHelper(node->right, out);
-    out.push_back(node);
-}
 
-std::vector<std::string> AVL::inorderNames() const {
-    std::vector<Node*> nodes;
-    inorderHelper(root, nodes);
-    std::vector<std::string> names;
-    for (Node* n : nodes) {
-        names.push_back(n->name);
-    }
-    return names;
-}
+// void AVL::insert(std::string name, std::string id){
+//     this->root = insertHelper(this->root, name, id);
+// }
 
-std::vector<std::string> AVL::preorderNames() const {
-    std::vector<Node*> nodes;
-    preorderHelper(root, nodes);
-    std::vector<std::string> names;
-    for (Node* n : nodes) {
-        names.push_back(n->name);
-    }
-    return names;
-}
+// void delete;
 
-std::vector<std::string> AVL::postorderNames() const {
-    std::vector<Node*> nodes;
-    postorderHelper(root, nodes);
-    std::vector<std::string> names;
-    for (Node* n : nodes) {
-        names.push_back(n->name);
-    }
-    return names;
-}
 
-std::vector<int> AVL::inorderIDs() const {
-    std::vector<Node*> nodes;
-    inorderHelper(root, nodes);
-    std::vector<int> ids;
-    for (Node* n : nodes) {
-        ids.push_back(n->id);
-    }
-    return ids; 
-} 
 
-std::vector<int> AVL::preorderIDs() const {
-    std::vector<Node*> nodes; 
-    preorderHelper(root, nodes);
-    std::vector<int> ids;
-    for (Node* n : nodes) {
-        ids.push_back(n->id);
-    }
-    return ids;
-}
 
-std::vector<int> AVL::postorderIDs() const {
-    std::vector<Node*> nodes;
-    postorderHelper(root, nodes);
-    std::vector<int> ids;
-    for (Node* n : nodes) {
-        ids.push_back(n->id);
-    }
-    return ids;
-}
-
-// ---------- info ----------
-
-int AVL::levelCount() const {
-    return height(root);
-}
-
-int AVL::size() const {
-    return nodeCount;
-}
-
-bool AVL::isBalancedHelper(Node* node) const {
-    if (!node) {
-        return true;
-    }
-    return std::abs(balanceFactor(node)) <= 1
-        && isBalancedHelper(node->left)
-        && isBalancedHelper(node->right);
-}
-
-bool AVL::isBalanced() const {
-    return isBalancedHelper(root);
-}
